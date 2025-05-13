@@ -1,65 +1,5 @@
-package Linkedin.com.example.demo.security;
+package Linkedin.com.example.demo.JWTtoken;
 
-// import io.jsonwebtoken.*;
-// import org.springframework.beans.factory.annotation.Value;
-// import org.springframework.stereotype.Component;
-
-// import java.util.Date;
-
-// @Component
-// public class JwtTokenProvider {
-
-//     @Value("${jwt.secret}")
-//     private String jwtSecret;
-
-//     private final long JWT_EXPIRATION = 86400000; // 24 hours
-
-//     // Generate JWT token with username as subject
-//     public String generateToken(String username) {
-//         Date now = new Date();
-//         Date expiryDate = new Date(now.getTime() + JWT_EXPIRATION);
-
-//         return Jwts.builder()
-//                 .setSubject(username)
-//                 .setIssuedAt(now)
-//                 .setExpiration(expiryDate)
-//                 .signWith(SignatureAlgorithm.HS512, jwtSecret)
-//                 .compact();
-//     }
-
-//     // Extract username from JWT
-//     public String getUsernameFromToken(String token) {
-//         Claims claims = Jwts.parser()
-//                 .setSigningKey(jwtSecret)
-//                 .parseClaimsJws(token)
-//                 .getBody();
-//         return claims.getSubject();
-//     }
-
-//     // Validate the JWT
-//     public boolean validateToken(String token) {
-//         try {
-//             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token);
-//             return true;
-//         } catch (SignatureException ex) {
-//             System.out.println("Invalid JWT signature");
-//         } catch (MalformedJwtException ex) {
-//             System.out.println("Invalid JWT token");
-//         } catch (ExpiredJwtException ex) {
-//             System.out.println("Expired JWT token");
-//         } catch (UnsupportedJwtException ex) {
-//             System.out.println("Unsupported JWT token");
-//         } catch (IllegalArgumentException ex) {
-//             System.out.println("JWT claims string is empty.");
-//         }
-//         return false;
-//     }
-
-//     public String getSecret() {
-      
-//         throw new UnsupportedOperationException("Unimplemented method 'getSecret'");
-//     }
-// }
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -144,5 +84,5 @@ public class JwtUtil {
     private Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
-}
+    }
 }
