@@ -1,4 +1,6 @@
-// ignore: file_names
+
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:linked_in/widgets/create_post_card.dart';
 
