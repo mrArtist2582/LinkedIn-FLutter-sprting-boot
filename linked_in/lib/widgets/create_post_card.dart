@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:linked_in/providers/auth_provider.dart';
-
 import 'package:provider/provider.dart';
 import '../providers/post_provider.dart';
 
 class CreatePostCard extends StatefulWidget {
   final VoidCallback onPostCreated;
 
-  const CreatePostCard({
-    super.key,
-    required this.onPostCreated,
-  });
+  const CreatePostCard({super.key, required this.onPostCreated});
 
   @override
   State<CreatePostCard> createState() => _CreatePostCardState();
@@ -35,9 +31,10 @@ class _CreatePostCardState extends State<CreatePostCard> {
     });
 
     try {
-      await Provider.of<PostProvider>(context, listen: false).createPost(
-        _contentController.text,
-      );
+      await Provider.of<PostProvider>(
+        context,
+        listen: false,
+      ).createPost(_contentController.text);
 
       _contentController.clear();
       setState(() {
@@ -48,10 +45,7 @@ class _CreatePostCardState extends State<CreatePostCard> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) {
@@ -63,11 +57,18 @@ class _CreatePostCardState extends State<CreatePostCard> {
   }
 
   Future<void> _pickImage() async {
-    
+    // You can implement image picking logic here using image_picker or file_picker
+    // For now, it sets a sample image
+    setState(() {
+      _imagePath = 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fbeautiful%2F&psig=AOvVaw0-eTbdX12rrO6EhCtZNFby&ust=1747208667995000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPjnpdP5n40DFQAAAAAdAAAAABAE';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -78,20 +79,23 @@ class _CreatePostCardState extends State<CreatePostCard> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    Provider.of<AuthProvider>(context)
-                            .user?['profilePicture'] ??
-                        '',
-                  ),
-                  onBackgroundImageError: (_, __) {},
-                  child: Provider.of<AuthProvider>(context)
-                              .user?['profilePicture'] ==
-                          null
-                      ? Text(Provider.of<AuthProvider>(context)
-                          .user?['name'][0]
-                          .toUpperCase())
+                  backgroundImage:
+                      user != null && user['profilePicture'] != null
+                      ? NetworkImage(user['profilePicture'])
+                      : null,
+                  onBackgroundImageError:
+                      user != null && user['profilePicture'] != null
+                      ? (_, __) {}
+                      : null, // Only set onBackgroundImageError if profilePicture is not null
+                  child: user != null && user['profilePicture'] == null
+                      ? Text(
+                          user['name']?.isNotEmpty == true
+                              ? user['name']![0].toUpperCase()
+                              : '?',
+                        )
                       : null,
                 ),
+
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -145,24 +149,16 @@ class _CreatePostCardState extends State<CreatePostCard> {
                 ),
                 Expanded(
                   child: TextButton.icon(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                     
-                          },
+                    onPressed: _isLoading ? null : () {},
                     icon: const Icon(Icons.videocam),
                     label: const Text('Video'),
                   ),
                 ),
                 Expanded(
                   child: TextButton.icon(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                         
-                          },
+                    onPressed: _isLoading ? null : () {},
                     icon: const Icon(Icons.article),
-                    label: const Text('Document'),
+                    label: const Text('Document', style: TextStyle(fontSize: 11)),
                   ),
                 ),
               ],
@@ -171,6 +167,16 @@ class _CreatePostCardState extends State<CreatePostCard> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: BeveledRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  backgroundColor: const Color(0xFF0077B5),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 15,
+                    horizontal: 13,
+                  ),
+                ),
                 onPressed: _isLoading ? null : _createPost,
                 child: _isLoading
                     ? const SizedBox(
@@ -178,11 +184,16 @@ class _CreatePostCardState extends State<CreatePostCard> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
-                    : const Text('Post'),
+                    : const Text('Post',style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),),
               ),
             ),
           ],

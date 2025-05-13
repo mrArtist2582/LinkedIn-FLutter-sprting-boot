@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:linked_in/model/post.dart';
+import 'package:linked_in/screens/create_Post_screen.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:water_drop_nav_bar/water_drop_nav_bar.dart';
 import 'profile_screen.dart';
@@ -179,9 +180,8 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       case 1:
-        return const Center(
-          child: Text('Create Post', style: TextStyle(fontSize: 20)),
-        );
+        return const CreatePostScreen();
+
       case 2:
         return const JobsScreen();
       case 3:
