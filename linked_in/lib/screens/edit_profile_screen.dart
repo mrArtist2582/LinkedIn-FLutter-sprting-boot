@@ -14,18 +14,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios),
-            onPressed: () {
-              
-             
-              Navigator.pushReplacement(context, MaterialPageRoute(
-                builder: (context) => const ProfileScreen()),
-              );
-            },
-          ),
-        ],
+       leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.pushReplacement(context, MaterialPageRoute(
+              builder: (context) => const ProfileScreen(),
+            ));
+          },
+        ),
       ),
     );
   }
