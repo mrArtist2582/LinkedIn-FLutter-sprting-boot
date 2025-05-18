@@ -15,6 +15,9 @@ import com.example.linkedin.Repo.PostRepo;
 import com.example.linkedin.Service.CustomUserDetails;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @RestController
 public class CommentController {
@@ -46,6 +49,14 @@ public class CommentController {
         commentRepo.save(comment);
 
         return ResponseEntity.ok("Comment added successfully");
+    }
+
+    @GetMapping("/post/{postId}/comments")
+    public List<String> getComments(@PathVariable Long postId) {
+        return commentRepo.findByPostModel_Id(postId)
+                .stream()
+                .map(comment -> comment.getText())
+                .collect(Collectors.toList());
     }
 
 }

@@ -1,5 +1,6 @@
 package com.example.linkedin.Controller;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -7,14 +8,18 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.linkedin.Models.JobModels;
 import com.example.linkedin.Models.PostModel;
 import com.example.linkedin.Models.UserModel;
+import com.example.linkedin.Repo.JobRepo;
 import com.example.linkedin.Repo.PostRepo;
 import com.example.linkedin.Service.CommentsService;
 import com.example.linkedin.Service.CustomUserDetails;
 import com.example.linkedin.Service.PostService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/jobpost")
@@ -24,10 +29,11 @@ public class PostController {
     private PostService postService;
     @Autowired
     private PostRepo postRepo;
+    @Autowired
+    private JobRepo jobRepo;
 
     @Autowired
     private CommentsService commentsService;
-
 
     @PostMapping("/post")
     public ResponseEntity<?> addPost(@RequestBody PostModel postModel,
@@ -50,7 +56,13 @@ public class PostController {
         return ResponseEntity.ok(userPosts);
     }
 
-    @PutMapping("/post/{postId}/update")
+    @GetMapping("/all")
+    public ResponseEntity<List<PostModel>> getAllPosts() {
+        List<PostModel> allPosts = postService.getAllPostsSortedByDate();
+        return ResponseEntity.ok(allPosts);
+    }
+
+    @PutMapping("/update/{postId}")
     public ResponseEntity<?> updatePost(
             @PathVariable Long postId,
             @RequestBody PostModel updatedPost,
@@ -89,9 +101,28 @@ public class PostController {
         }
     }
 
+//    @GetMapping("/search")
+//    public ResponseEntity<List<PostModel>> searchPosts(@RequestParam String keyword) {
+//        return ResponseEntity.ok(postService.searchPosts(keyword));
+//    }
+
     @GetMapping("/search")
-    public ResponseEntity<List<PostModel>> searchPosts(@RequestParam String keyword) {
-        return ResponseEntity.ok(postService.searchPosts(keyword));
+    public Map<String, Object> searchPostsAndJobs(@RequestParam String keyword) {
+        List<PostModel> postResults;
+        if (keyword.startsWith("@")) {
+            String username = keyword.substring(1);
+            postResults = postRepo.findByUser_UsernameContainingIgnoreCase(username);
+        } else {
+            postResults = postRepo.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(keyword, keyword);
+        }
+
+        List<JobModels> jobResults = jobRepo.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("posts", postResults);
+        response.put("jobs", jobResults);
+        return response;
     }
+
 
 }

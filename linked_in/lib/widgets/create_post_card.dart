@@ -1,204 +1,271 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:linked_in/providers/auth_provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:linked_in/providers/post_provider.dart';
 import 'package:provider/provider.dart';
-import '../providers/post_provider.dart';
 
 class CreatePostCard extends StatefulWidget {
   final VoidCallback onPostCreated;
 
-  const CreatePostCard({super.key, required this.onPostCreated});
+  const CreatePostCard({Key? key, required this.onPostCreated}) : super(key: key);
 
   @override
   State<CreatePostCard> createState() => _CreatePostCardState();
 }
 
 class _CreatePostCardState extends State<CreatePostCard> {
-  final _contentController = TextEditingController();
-  String? _imagePath;
-  bool _isLoading = false;
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController contentController = TextEditingController();
+  final TextEditingController urlController = TextEditingController();
+  Uint8List? selectedImageBytes;
+  String? selectedImageName;
+  bool _isDisposed = false;
 
   @override
   void dispose() {
-    _contentController.dispose();
+    _isDisposed = true;
+    titleController.dispose();
+    contentController.dispose();
+    urlController.dispose();
     super.dispose();
   }
 
-  Future<void> _createPost() async {
-    if (_contentController.text.isEmpty && _imagePath == null) return;
+  Future<void> pickImage() async {
+    if (_isDisposed) return;
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await Provider.of<PostProvider>(
-        context,
-        listen: false,
-      ).createPost(_contentController.text);
-
-      _contentController.clear();
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      if (_isDisposed) return;
       setState(() {
-        _imagePath = null;
+        selectedImageBytes = bytes;
+        selectedImageName = image.name;
+        urlController.text = image.name;
       });
-
-      widget.onPostCreated();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
-  Future<void> _pickImage() async {
-    // You can implement image picking logic here using image_picker or file_picker
-    // For now, it sets a sample image
+  void submitPost() async {
+    if (_isDisposed) return;
+    final title = titleController.text.trim();
+    final content = contentController.text.trim();
+    final url = urlController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) {
+      _showSnackBar("Please enter both title and content.",
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+
+    try {
+      await postProvider.createPost(
+          title: title,
+          content: content,
+          url: url,
+          imageBytes: selectedImageBytes);
+      if (_isDisposed) return;
+      widget.onPostCreated();
+      _showSnackBar("Post created successfully!",
+          backgroundColor: Colors.green); // Show success
+      _clearInputFields();
+    } catch (e) {
+      if (_isDisposed) return;
+      _showSnackBar('Failed to create post: $e',
+          backgroundColor: Colors.red); // show error
+    }
+  }
+
+  void _showSnackBar(String message, {Color? backgroundColor}) {
+    if (_isDisposed) return; // Check if the widget is disposed.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: backgroundColor ??
+            Colors.grey, // Default background color if not provided
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+      ),
+    );
+  }
+
+  void _clearInputFields() {
+    if (_isDisposed) return;
+    titleController.clear();
+    contentController.clear();
+    urlController.clear();
     setState(() {
-      _imagePath = 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.pexels.com%2Fsearch%2Fbeautiful%2F&psig=AOvVaw0-eTbdX12rrO6EhCtZNFby&ust=1747208667995000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPjnpdP5n40DFQAAAAAdAAAAABAE';
+      selectedImageBytes = null;
+      selectedImageName = null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    final isLoading = context.watch<PostProvider>().isLoading;
+    final theme = Theme.of(context);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Post'), // Title for the AppBar
+        automaticallyImplyLeading:
+            false, // Remove the back button.  IMPORTANT
+      ),
+      body: Padding(
         padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView( // Added SingleChildScrollView
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage:
-                      user != null && user['profilePicture'] != null
-                      ? NetworkImage(user['profilePicture'])
-                      : null,
-                  onBackgroundImageError:
-                      user != null && user['profilePicture'] != null
-                      ? (_, __) {}
-                      : null, // Only set onBackgroundImageError if profilePicture is not null
-                  child: user != null && user['profilePicture'] == null
-                      ? Text(
-                          user['name']?.isNotEmpty == true
-                              ? user['name']![0].toUpperCase()
-                              : '?',
-                        )
-                      : null,
+            const SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              textCapitalization: TextCapitalization.sentences,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                labelText: 'Title',
+                hintText: 'Enter post title',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _contentController,
-                    decoration: const InputDecoration(
-                      hintText: 'Start a post...',
-                      border: InputBorder.none,
-                    ),
-                    maxLines: 5,
-                  ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: theme.primaryColor, width: 2), // Highlight
                 ),
-              ],
-            ),
-            if (_imagePath != null) ...[
-              const SizedBox(height: 16),
-              Stack(
-                children: [
-                  Image.network(
-                    _imagePath!,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        setState(() {
-                          _imagePath = null;
-                        });
-                      },
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
+                labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               ),
-            ],
-            const Divider(),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: _isLoading ? null : _pickImage,
-                    icon: const Icon(Icons.image),
-                    label: const Text('Photo'),
-                  ),
-                ),
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: _isLoading ? null : () {},
-                    icon: const Icon(Icons.videocam),
-                    label: const Text('Video'),
-                  ),
-                ),
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: _isLoading ? null : () {},
-                    icon: const Icon(Icons.article),
-                    label: const Text('Document', style: TextStyle(fontSize: 11)),
-                  ),
-                ),
-              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+            TextField(
+              controller: contentController,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                labelText: 'Content',
+                hintText: 'Write your post content here...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: theme.primaryColor, width: 2), // Highlight
+                ),
+                labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: urlController,
+              keyboardType: TextInputType.url,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                labelText: 'Image URL (Optional)',
+                hintText: 'Enter image URL',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: theme.primaryColor, width: 2), // Highlight
+                ),
+                labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // ElevatedButton.icon(
+            //   onPressed: pickImage,
+            //   icon: Icon(Icons.add_photo_alternate,
+            //       color: theme.colorScheme.primary),
+            //   label: Text(
+            //     "Add Photo",
+            //     style: theme.textTheme.bodyMedium?.copyWith(
+            //       color: theme.colorScheme.primary,
+            //     ),
+            //   ),
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: theme.colorScheme.surfaceVariant,
+            //     foregroundColor: theme.colorScheme.primary,
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     padding: const EdgeInsets.symmetric(
+            //         vertical: 12, horizontal: 16), // Increased padding
+            //   ),
+            // ),
+            // if (selectedImageBytes != null)
+            //   Padding(
+            //     padding: const EdgeInsets.only(top: 16.0),
+            //     child: ClipRRect(
+            //       borderRadius: BorderRadius.circular(12),
+            //       child: Image.memory(
+            //         selectedImageBytes!,
+            //         height: 150, // Increased height
+            //         width: double.infinity,
+            //         fit: BoxFit.cover,
+            //       ),
+            //     ),
+            //   ),
+            const SizedBox(height: 24), // Increased space before button
             SizedBox(
               width: double.infinity,
+              height: 56, // Increased height
               child: ElevatedButton(
+                onPressed: isLoading ? null : submitPost,
                 style: ElevatedButton.styleFrom(
-                  shape: BeveledRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: const Color(0xFF0077B5),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 15,
-                    horizontal: 13,
+                  textStyle: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _isLoading ? null : _createPost,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
+                child: isLoading
+                    ? const CircularProgressIndicator(
+                        color: Colors.white,
                       )
-                    : const Text('Post',style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),),
+                    : const Text(
+                        "Post",
+                      ),
               ),
             ),
           ],
+        ),
         ),
       ),
     );
   }
 }
+

@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PostProvider with ChangeNotifier {
   List<Map<String, dynamic>> _posts = [];
@@ -33,7 +37,7 @@ class PostProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final newPosts = List<Map<String, dynamic>>.from(data['posts']);
-        
+
         if (newPosts.isEmpty) {
           _hasMore = false;
         } else {
@@ -49,18 +53,33 @@ class PostProvider with ChangeNotifier {
     }
   }
 
-  Future<void> createPost(String content) async {
+  // Updated createPost to accept title, content, and url
+  Future<void> createPost({
+    required String title,
+    required String content,
+    required String url, Uint8List? imageBytes,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
+    final pref = await SharedPreferences.getInstance();
+    final token = pref.getString('token');
+
     try {
       final response = await http.post(
-        Uri.parse('YOUR_API_URL/posts'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'content': content}),
+        Uri.parse('http://192.168.105.153:8080/jobpost/post'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': '$token'
+        },
+        body: json.encode({
+          'title': title,
+          'content': content,
+          'url': url,
+        }),
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         final newPost = json.decode(response.body);
         _posts.insert(0, newPost);
       } else {
@@ -150,4 +169,4 @@ class PostProvider with ChangeNotifier {
       rethrow;
     }
   }
-} 
+}

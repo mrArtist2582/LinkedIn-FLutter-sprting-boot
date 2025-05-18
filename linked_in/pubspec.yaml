@@ -40,6 +40,10 @@ dependencies:
   liquid_pull_to_refresh: ^3.0.1
   water_drop_nav_bar: ^2.2.2
   intl: ^0.20.2
+  shared_preferences: ^2.5.3
+  toastification: ^3.0.2
+  image_picker: ^1.1.2
+  elegant_notification: ^2.5.1
 
 dev_dependencies:
   flutter_test:

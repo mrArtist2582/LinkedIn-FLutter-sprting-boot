@@ -1,178 +1,219 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileProvider with ChangeNotifier {
-  Map<String, dynamic>? _profile;
-  bool _isLoading = false;
-  final bool _isOwnProfile = true;
+  // Auth info
+  String? _username;
+  String? _email;
+  String? _token;
 
-  ProfileProvider() {
-    // Initialize with mock data for development
-    _profile = {
-      'name': 'John Doe',
-      'headline': 'Software Engineer at Tech Company',
-      'avatar': '',
-      'location': 'New York, NY',
-      'about': 'Passionate software engineer with 5 years of experience in mobile and web development. Specialized in Flutter and React Native.',
-      'skills': [
-        'Flutter',
-        'Dart',
-        'React Native',
-        'JavaScript',
-        'TypeScript',
-        'Node.js',
-      ],
-      'experiences': [
-        {
-          'title': 'Senior Software Engineer',
-          'company': 'Tech Company',
-          'company_logo': 'https://via.placeholder.com/40',
-          'start_date': 'Jan 2020',
-          'end_date': 'Present',
-          'description': 'Leading mobile app development team and implementing new features.',
-        },
-        {
-          'title': 'Software Engineer',
-          'company': 'Previous Company',
-          'company_logo': 'https://via.placeholder.com/40',
-          'start_date': 'Jun 2018',
-          'end_date': 'Dec 2019',
-          'description': 'Developed and maintained mobile applications.',
-        },
-      ],
-      'education': [
-        {
-          'school': 'University of Technology',
-          'degree': 'Bachelor of Science in Computer Science',
-          'school_logo': 'https://via.placeholder.com/40',
-          'start_date': '2014',
-          'end_date': '2018',
-          'description': 'Graduated with honors. Specialized in Software Engineering.',
-        },
-      ],
-      'activities': [
-        {
-          'user_name': 'John Doe',
-          'user_avatar': 'https://via.placeholder.com/40',
-          'timestamp': '2 hours ago',
-          'content': 'Just completed a new Flutter project! Check it out.',
-          'image': 'https://via.placeholder.com/400x300',
-        },
-        {
-          'user_name': 'John Doe',
-          'user_avatar': 'https://via.placeholder.com/40',
-          'timestamp': '1 day ago',
-          'content': 'Attended the Flutter Conference 2024. Great experience!',
-        },
-      ],
-    };
+  // Profile info
+  String? headline;
+  String? skills;
+  String? education;
+  String? country;
+  String? city;
+  String? about;
+  String? pronouns;
+  String? link;
+  String? linkText;
+  String? industry;
+  String? experience;
+
+  bool isLoading = false;
+  bool isfetch = false;
+
+  // Getters
+  String? get username => _username;
+  String? get email => _email;
+  String? get token => _token;
+
+  List<Map<String, dynamic>> userPosts = [];
+  bool isPostLoading = false;
+
+  // Load auth info from SharedPreferences
+  Future<void> loadProfileData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _username = prefs.getString('username');
+    _email = prefs.getString('email');
+    _token = prefs.getString('token');
+    notifyListeners();
   }
 
-  Map<String, dynamic>? get profile => _profile;
-  bool get isLoading => _isLoading;
-  bool get isOwnProfile => _isOwnProfile;
-
-  Future<void> fetchProfile(String userId) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-      // In a real app, you would make an HTTP request here
-      // For now, we're using mock data
-    } catch (e) {
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+  Future<void> fetchProfile() async {
+    if (_token == null) {
+      await loadProfileData(); // Ensure token is loaded
     }
-  }
 
-  Future<void> updateProfile({
-    String? headline,
-    String? about,
-    List<String>? skills,
-  }) async {
-    _isLoading = true;
-    notifyListeners();
+    final url = Uri.parse('http://192.168.105.153:8080/profile/get');
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (_profile != null) {
-        if (headline != null) _profile!['headline'] = headline;
-        if (about != null) _profile!['about'] = about;
-        if (skills != null) _profile!['skills'] = skills;
+      isLoading = true;
+      notifyListeners();
+
+      final response = await http.get(url, headers: {
+        'Authorization': '$_token',
+      });
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        headline = data['headline'];
+        skills = data['skills'];
+        education = data['education'];
+        country = data['country'];
+        city = data['city'];
+        about = data['about'];
+        pronouns = data['pronoums'];
+        link = data['link'];
+        linkText = data['linktext'];
+        industry = data['industry'];
+        experience = data['experience'];
+
+        isfetch = true;
+      } else {
+        print("No profile found");
       }
     } catch (e) {
-      rethrow;
+      print("Fetch error: $e");
     } finally {
-      _isLoading = false;
+      isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> updateProfilePicture(String imagePath) async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> updateProfile(Map<String, dynamic> body) async {
+    if (_token == null) {
+      await loadProfileData();
+    }
+
+    final Uri url = isfetch
+        ? Uri.parse('http://192.168.105.153:8080/profile/update') // Update existing
+        : Uri.parse('http://192.168.105.153:8080/profile/post'); // Create new
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (_profile != null) {
-        _profile!['avatar'] = imagePath;
+      final response = isfetch
+          ? await http.put(
+              url,
+              headers: {
+                'Authorization': '$_token',
+                'Content-Type': 'application/json',
+              },
+              body: json.encode(body),
+            )
+          : await http.post(
+              url,
+              headers: {
+                'Authorization': '$_token',
+                'Content-Type': 'application/json',
+              },
+              body: json.encode(body),
+            );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await fetchProfile(); // Refresh profile after save/update
+        print("Profile saved/updated successfully");
+      } else {
+        print("Save/Update failed: ${response.body}");
       }
     } catch (e) {
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      print("Save/Update error: $e");
     }
   }
 
-  Future<void> addSkill(String skill) async {
-    if (_profile == null) return;
-
-    _isLoading = true;
+  Future<void> deleteprofile() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
     notifyListeners();
+  }
+
+  Future<void> fetchUserPosts() async {
+    if (_token == null) {
+      await loadProfileData(); // Ensure token is available
+    }
+
+    final url = Uri.parse('http://192.168.105.153:8080/jobpost/get');
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final skills = List<String>.from(_profile!['skills']);
-      if (!skills.contains(skill)) {
-        skills.add(skill);
-        _profile!['skills'] = skills;
+      isPostLoading = true;
+      notifyListeners();
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': '$_token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        userPosts = data.cast<Map<String, dynamic>>();
+      } else {
+        print("Failed to fetch posts: ${response.body}");
       }
     } catch (e) {
-      rethrow;
+      print("Error fetching posts: $e");
     } finally {
-      _isLoading = false;
+      isPostLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> removeSkill(String skill) async {
-    if (_profile == null) return;
-
-    _isLoading = true;
-    notifyListeners();
+  Future<void> updatePost(int postId, Map<String, dynamic> updatedData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final skills = List<String>.from(_profile!['skills']);
-      skills.remove(skill);
-      _profile!['skills'] = skills;
+      final response = await http.put(
+        Uri.parse('http://192.168.105.153:8080/jobpost/update/${postId}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': '$token',
+        },
+        body: jsonEncode(updatedData),
+      );
+
+      if (response.statusCode == 200) {
+        // Update the post locally as well, if needed
+        int index = userPosts.indexWhere((post) => post['id'] == postId);
+        if (index != -1) {
+          userPosts[index] = {...userPosts[index], ...updatedData};
+          notifyListeners();
+        }
+      } else {
+        throw Exception('Failed to update post');
+      }
     } catch (e) {
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      print('Error updating post: $e');
     }
   }
-} 
+
+  Future<void> deletePost(int postId) async {
+    final pref = await SharedPreferences.getInstance();
+    final token = pref.getString('token');
+    try {
+      // Assume you have an HTTP service to delete post
+      final response = await http.delete(
+          Uri.parse('http://192.168.105.153:8080/jobpost/delete/${postId}'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': '$token',
+          });
+
+      if (response.statusCode == 200) {
+        // Remove the post from local list
+        userPosts.removeWhere((post) => post['id'] == postId);
+        notifyListeners();
+        await fetchUserPosts();
+      } else {
+        throw Exception('Failed to delete post');
+      }
+    } catch (e) {
+      print('Error deleting post: $e');
+      // Optionally show error in UI
+    }
+  }
+
+}

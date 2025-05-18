@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:linked_in/providers/auth_provider.dart';
+import 'package:linked_in/providers/comment_provider.dart';
+import 'package:linked_in/providers/home_screen_post_provider.dart';
+import 'package:linked_in/providers/job_provider.dart';
 import 'package:linked_in/providers/post_provider.dart';
+import 'package:linked_in/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
 
@@ -10,6 +14,10 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => JobProvider()),
+        ChangeNotifierProvider(create: (_) => HomescreenPostProvider()),
+        ChangeNotifierProvider(create: (_) => CommentProvider()),
       ],
       child: const MyApp(),
     ),

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:linked_in/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 import 'register_screen.dart';
 import '../home_screen.dart';
+ // Assuming this path is correct
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,23 +27,50 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  void _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    // Simulate login delay
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final authData = await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).login(_emailController.text.trim(), _passwordController.text.trim());
+
+      // Show success toast
+      toastification.show(
+        context: context,
+        type: ToastificationType.success,
+        style: ToastificationStyle.flat,
+        title: const Text("Login Successful"),
+        description: Text("Welcome ${authData['email']}"),
+        autoCloseDuration: const Duration(seconds: 3),
+      );
+
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
-    });
+    } catch (e) {
+      // Show error toast
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        style: ToastificationStyle.flat,
+        title: const Text("Login Failed"),
+        description: Text(e.toString()),
+        autoCloseDuration: const Duration(seconds: 5),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -172,10 +203,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: Text(
+                        child: const Text(
                           "Don't have an account? Sign Up",
                           style: TextStyle(
-                            color: const Color(0xFF0077B5),
+                            color: Color(0xFF0077B5),
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

@@ -1,6 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:linked_in/screens/home_screen.dart';
+import 'package:provider/provider.dart';
+
+// Assuming you have a ProfileProvider.  If not, create one.
+class ProfileProvider with ChangeNotifier {
+  String? username;
+  String? headline;
+  String? city;
+  String? country;
+  String? about;
+  String? skills;
+  // Add lists for experience and education if you're managing them in the provider
+  List<Map<String, String>> experienceList = [];
+  List<Map<String, String>> educationList = [];
+
+  // Example update methods.  Adjust as needed.
+  void setUsername(String name) {
+    username = name;
+    notifyListeners();
+  }
+
+  void setHeadline(String newHeadline) {
+    headline = newHeadline;
+    notifyListeners();
+  }
+
+  void setLocation(String newCity, String newCountry) {
+    city = newCity;
+    country = newCountry;
+    notifyListeners();
+  }
+
+  void setAbout(String newAbout) {
+    about = newAbout;
+    notifyListeners();
+  }
+
+  void setSkills(String newSkills) {
+    skills = newSkills;
+    notifyListeners();
+  }
+
+  void setExperience(List<Map<String, String>> newExperience) {
+    experienceList = newExperience;
+    notifyListeners();
+  }
+
+    void setEducation(List<Map<String, String>> newEducation) {
+    educationList = newEducation;
+    notifyListeners();
+  }
+
+  // Add a method to update all profile data at once, if needed
+  void updateProfile({
+    String? newUsername,
+    String? newHeadline,
+    String? newCity,
+    String? newCountry,
+    String? newAbout,
+    String? newSkills,
+        List<Map<String, String>>? newExperienceList,
+    List<Map<String, String>>? newEducationList,
+  }) {
+    username = newUsername ?? username;
+    headline = newHeadline ?? headline;
+    city = newCity ?? city;
+    country = newCountry ?? country;
+    about = newAbout ?? about;
+    skills = newSkills ?? skills;
+        experienceList = newExperienceList ?? experienceList;
+        educationList = newEducationList ?? educationList;
+    notifyListeners();
+  }
+}
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -13,38 +85,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
 
-  // Profile fields
-  String name = 'John Doe';
-  String headline = 'Flutter Developer at KD Tech';
-  String location = 'Ahmedabad, India';
-  String about =
-      'Creative and passionate Flutter developer with experience building beautiful mobile apps.';
-  String email = 'john.doe@example.com';
-  String phone = '+91 9876543210';
-  String website = 'https://johndoe.dev';
-  String activity = 'Posted an article on Flutter best practices';
-  List<Map<String, String>> educationList = [
-    {
-      'college': 'MBIT College',
-      'specialization': 'Computer Engineering',
-      'start': '',
-      'end': '',
-    },
-  ];
-  List<Map<String, String>> experienceList = [
-    {
-      'company': 'KD Tech',
-      'title': 'Flutter Developer',
-      'start': '2022',
-      'end': 'Present',
-    },
-    {'company': 'Internpe', 'title': 'Intern', 'start': '2021', 'end': ''},
-  ];
-  List<String> skills = ['Flutter', 'Firebase', 'Dart'];
+  // Profile fields (managed by ProfileProvider now)
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _headlineController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _aboutController = TextEditingController();
   final TextEditingController _skillController = TextEditingController();
+
+  // Local lists for editing.  These will be saved to the provider.
+  List<Map<String, String>> _educationList = [];
+  List<Map<String, String>> _experienceList = [];
+  List<String> _skills = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+    _nameController.text = profileProvider.username ?? '';
+    _headlineController.text = profileProvider.headline ?? '';
+    _locationController.text =
+        '${profileProvider.city ?? ''}, ${profileProvider.country ?? ''}';
+    _aboutController.text = profileProvider.about ?? '';
+    _skills = profileProvider.skills?.split(',') ?? [];
+        _educationList = profileProvider.educationList;
+        _experienceList = profileProvider.experienceList;
+  }
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _headlineController.dispose();
+    _locationController.dispose();
+    _aboutController.dispose();
     _skillController.dispose();
     super.dispose();
   }
@@ -82,7 +154,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     backgroundColor: const Color(0xFF0077B5),
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                   ),
                   onPressed: details.onStepContinue,
                   child: Text(
@@ -106,14 +178,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  List<Step> getSteps() => List.generate(6, (index) {
-    return Step(
-      title: _stepTitle(index),
-      content: _stepContent(index),
-      isActive: _currentStep >= index,
-      state: _currentStep > index ? StepState.complete : StepState.indexed,
-    );
-  });
+  List<Step> getSteps() => List.generate(5, (index) {
+        return Step(
+          title: _stepTitle(index),
+          content: _stepContent(index),
+          isActive: _currentStep >= index,
+          state: _currentStep > index ? StepState.complete : StepState.indexed,
+        );
+      });
 
   Widget _stepTitle(int index) {
     switch (index) {
@@ -127,8 +199,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return const Text('Education');
       case 4:
         return const Text('Skills');
-      case 5:
-        return const Text('Contact & Activity');
       default:
         return const SizedBox.shrink();
     }
@@ -137,41 +207,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _stepContent(int index) {
     switch (index) {
       case 0:
+        final profileProvider = Provider.of<ProfileProvider>(context);
         return Column(
           children: [
-            CircleAvatar(radius: 40, child: Text(name[0])),
+            CircleAvatar(
+                radius: 40,
+                child: Text(profileProvider.username?[0].toUpperCase() ?? '')),
             const SizedBox(height: 8),
             _buildTextField(
               label: 'Name',
-              initialValue: name,
-              onSaved: (val) => name = val,
+              controller: _nameController,
+              onSaved: (val) {}, // Saving is done on Finish
             ),
             const SizedBox(height: 8),
             _buildTextField(
               label: 'Headline',
-              initialValue: headline,
-              onSaved: (val) => headline = val,
+              controller: _headlineController,
+              onSaved: (val) {}, // Saving is done on Finish
             ),
             const SizedBox(height: 8),
             _buildTextField(
               label: 'Location',
-              initialValue: location,
-              onSaved: (val) => location = val,
+              controller: _locationController,
+              onSaved: (val) {}, // Saving is done on Finish
             ),
           ],
         );
       case 1:
         return _buildTextField(
           label: 'About',
-          initialValue: about,
-          onSaved: (val) => about = val,
+          controller: _aboutController,
+          onSaved: (val) {}, // Saving is done on Finish
           maxLines: 5,
         );
       case 2:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ...experienceList
+            ..._experienceList
                 .map(
                   (exp) => ListTile(
                     title: Text(exp['title']!),
@@ -180,7 +253,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 )
-                // ignore: unnecessary_to_list_in_spreads
                 .toList(),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -202,14 +274,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ...educationList.map(
-              (edu) => ListTile(
-                title: Text(edu['college']!),
-                subtitle: Text(
-                  '${edu['specialization']} (${edu['start']} - ${edu['end']})',
-                ),
-              ),
-            ),
+            ..._educationList
+                .map(
+                  (edu) => ListTile(
+                    title: Text(edu['college']!),
+                    subtitle: Text(
+                      '${edu['specialization']} (${edu['start']} - ${edu['end']})',
+                    ),
+                  ),
+                )
+                .toList(),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
@@ -225,14 +299,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             Wrap(
               spacing: 8,
-              children: skills
+              children: _skills
                   .map(
                     (skill) => Chip(
                       label: Text(skill),
                       deleteIcon: const Icon(Icons.close),
                       onDeleted: () {
                         setState(() {
-                          skills.remove(skill);
+                          _skills.remove(skill);
                         });
                       },
                     ),
@@ -255,9 +329,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ElevatedButton(
                   onPressed: () {
                     String newSkill = _skillController.text.trim();
-                    if (newSkill.isNotEmpty && !skills.contains(newSkill)) {
+                    if (newSkill.isNotEmpty && !_skills.contains(newSkill)) {
                       setState(() {
-                        skills.add(newSkill);
+                        _skills.add(newSkill);
                         _skillController.clear();
                       });
                     }
@@ -268,34 +342,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ],
         );
-      case 5:
-        return Column(
-          children: [
-            _buildTextField(
-              label: 'Email',
-              initialValue: email,
-              onSaved: (val) => email = val,
-            ),
-            const SizedBox(height: 8),
-            _buildTextField(
-              label: 'Phone',
-              initialValue: phone,
-              onSaved: (val) => phone = val,
-            ),
-            const SizedBox(height: 8),
-            _buildTextField(
-              label: 'Website',
-              initialValue: website,
-              onSaved: (val) => website = val,
-            ),
-            const SizedBox(height: 8),
-            _buildTextField(
-              label: 'Activity',
-              initialValue: activity,
-              onSaved: (val) => activity = val,
-            ),
-          ],
-        );
       default:
         return const SizedBox.shrink();
     }
@@ -303,12 +349,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildTextField({
     required String label,
-    required String initialValue,
+    required TextEditingController controller,
     required Function(String) onSaved,
     int maxLines = 1,
   }) {
     return TextFormField(
-      initialValue: initialValue,
+      controller: controller,
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
@@ -378,9 +424,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         lastDate: DateTime.now(),
                       );
                       if (startDate != null) {
-                        startDateController.text = DateFormat(
-                          'yyyy',
-                        ).format(startDate!);
+                        startDateController.text =
+                            DateFormat('yyyy').format(startDate!);
                       }
                     },
                     validator: (value) => value == null || value.isEmpty
@@ -404,10 +449,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         lastDate: DateTime.now(),
                       );
                       if (endDate != null) {
-                        endDateController.text = DateFormat(
-                          'yyyy',
-                        ).format(endDate!);
+                        endDateController.text =
+                            DateFormat('yyyy').format(endDate!);
                       }
+                    },
+                    validator: (value) {
+                      if (value != null &&
+                          value.isNotEmpty &&
+                          startDate != null &&
+                          endDate != null &&
+                          endDate!.isBefore(startDate!)) {
+                        return 'End date cannot be before start date';
+                      }
+                      return null;
                     },
                   ),
                 ],
@@ -426,7 +480,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onPressed: () {
                 if (formKeyExperience.currentState!.validate()) {
                   setState(() {
-                    experienceList.add({
+                    _experienceList.add({
                       'company': companyController.text,
                       'title': titleController.text,
                       'start': startDateController.text,
@@ -501,9 +555,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         lastDate: DateTime.now(),
                       );
                       if (startDate != null) {
-                        startDateController.text = DateFormat(
-                          'yyyy',
-                        ).format(startDate!);
+                        startDateController.text =
+                            DateFormat('yyyy').format(startDate!);
                       }
                     },
                     validator: (value) => value == null || value.isEmpty
@@ -527,9 +580,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         lastDate: DateTime.now(),
                       );
                       if (endDate != null) {
-                        endDateController.text = DateFormat(
-                          'yyyy',
-                        ).format(endDate!);
+                        endDateController.text =
+                            DateFormat('yyyy').format(endDate!);
                       }
                     },
                     validator: (value) {
@@ -559,7 +611,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onPressed: () {
                 if (formKeyEducation.currentState!.validate()) {
                   setState(() {
-                    educationList.add({
+                    _educationList.add({
                       'college': collegeController.text,
                       'specialization': specializationController.text,
                       'start': startDateController.text,
@@ -576,19 +628,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  void _saveProfile() {
+  void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+      // No need to call _formKey.currentState!.save() here as we are using controllers
+
+      final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+
+      // Prepare the data to update
+      profileProvider.updateProfile(
+        newUsername: _nameController.text.trim(),
+        newHeadline: _headlineController.text.trim(),
+        newCity: _locationController.text.split(',').first.trim(),
+        newCountry: _locationController.text.split(',').last.trim(),
+        newAbout: _aboutController.text.trim(),
+        newSkills: _skills.join(','), // Convert list to comma-separated string
+        newExperienceList: _experienceList,
+        newEducationList: _educationList,
+      );
 
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Profile updated')));
 
       Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      //  Removed the direct navigation to HomeScreen.  The calling widget should handle navigation.
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => const HomeScreen()),
+      // );
     }
   }
 }
+

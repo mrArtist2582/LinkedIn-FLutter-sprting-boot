@@ -1,90 +1,73 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
-  Map<String, dynamic>? _user;
-  String? _errorMessage;
 
   bool get isAuthenticated => _isAuthenticated;
-  Map<String, dynamic>? get user => _user;
-  String? get errorMessage => _errorMessage;
-
-  Future<void> login(String email, String password) async {
-    // Reset the error message before trying to log in
-    _errorMessage = null;
-    notifyListeners();
-
-    if (email.isEmpty || password.isEmpty) {
-      _errorMessage = 'Email and password cannot be empty.';
-      notifyListeners();
-      return;
-    }
-
-    // Mock login - simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    try {
-      // Simulate checking email and password
-      if (email == 'test@example.com' && password == 'password') {
-        _isAuthenticated = true;
-        _user = {
-          'id': '1',
-          'name': 'John Doe',
-          'email': email,
-          'profilePicture': '',
-          'headline': 'Software Developer',
-          'about': 'Passionate about creating great software',
-          'skills': ['Flutter', 'Dart', 'Firebase'],
-        };
-        notifyListeners();
-      } else {
-        _errorMessage = 'Invalid email or password.';
-        notifyListeners();
-      }
-    } catch (e) {
-      _errorMessage = 'Login failed. Please try again later.';
-      notifyListeners();
-    }
-  }
 
   Future<void> register(String name, String email, String password) async {
-    // Reset the error message before trying to register
-    _errorMessage = null;
-    notifyListeners();
+    final response = await http.post(
+      Uri.parse('http://192.168.105.153:8080/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': name,
+        'email': email,
+        'password': password,
+      }),
+    );
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _errorMessage = 'All fields are required.';
-      notifyListeners();
+    if (response.statusCode == 200) {
+      // Registration successful – do nothing here, handled in UI
       return;
+    } else if (response.statusCode == 208) {
+      throw Exception('Account already exists');
+    } else {
+      throw Exception('Failed to register');
     }
 
-    // Mock registration - simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
+    // Successfully registered – no need to set isAuthenticated or user
+  }
 
-    try {
-      // Simulate successful registration
-      _isAuthenticated = true;
-      _user = {
-        'id': '1',
-        'name': name,
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('http://192.168.105.153:8080/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
         'email': email,
-        'profilePicture': '',
-        'headline': 'New User',
-        'about': '',
-        'skills': [],
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', responseData['token']);
+      await prefs.setString('email', responseData['user']['email']);
+      await prefs.setString('username', responseData['user']['username']);
+      await prefs.setString('password', responseData['user']['password']);
+
+      _isAuthenticated = true;
+      notifyListeners();
+
+      return {
+        'email': responseData['user']['email'], // fixed this part too
+        'token': responseData['token'],
       };
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = 'Registration failed. Please try again later.';
-      notifyListeners();
+    } else if (response.statusCode == 401) {
+      throw Exception('Invalid password');
+    } else if (response.statusCode == 404) {
+      throw Exception('User not found');
+    } else {
+      throw Exception('Login failed. Please try again.');
     }
   }
 
   Future<void> logout() async {
-    // Mock logout - simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
     _isAuthenticated = false;
-    _user = null;
     notifyListeners();
   }
 }

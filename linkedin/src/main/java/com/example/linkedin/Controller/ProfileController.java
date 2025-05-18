@@ -2,21 +2,29 @@ package com.example.linkedin.Controller;
 
 
 
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.linkedin.Models.ProfileModel;
 import com.example.linkedin.Models.UserModel;
 import com.example.linkedin.Repo.ProfileRepo;
 import com.example.linkedin.Service.CustomUserDetails;
 import com.example.linkedin.Service.ProfileService;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/profile")
@@ -58,7 +66,6 @@ public class ProfileController {
         }
         return ResponseEntity.ok(profile);
     }
-
 
     @PutMapping("/update")
     public ResponseEntity<Map<String,ProfileModel>> updatedata(@AuthenticationPrincipal CustomUserDetails customUserDetails, @RequestBody ProfileModel profileModel){

@@ -1,8 +1,13 @@
+// home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:linked_in/model/post.dart';
-import 'package:linked_in/screens/create_Post_screen.dart';
+import 'package:linked_in/providers/home_screen_post_provider.dart';
+import 'package:linked_in/widgets/create_post_card.dart';
+import 'package:linked_in/widgets/open_comment_bottom_Sheet.dart';
+import 'package:provider/provider.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:water_drop_nav_bar/water_drop_nav_bar.dart';
+
 import 'profile_screen.dart';
 import 'jobs_screen.dart';
 
@@ -17,46 +22,110 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
   late Future<List<Post>> _postsFuture;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _postsFuture = fetchPosts();
+    _postsFuture = _fetchPosts();
   }
 
-  Future<List<Post>> fetchPosts() async {
-    await Future.delayed(const Duration(seconds: 2)); // simulate delay
-    return [
-      Post(
-        userName: 'Michael Chen',
-        headline: 'Product Manager at InnovateTech',
-        date: 'May 14, 2023',
-        avatar: '',
-        content: 'Just launched our new product after 6 months of hard work...',
-        image:
-            'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=800&q=80',
-        likes: 87,
-        comments: 15,
-        liked: false,
-      ),
-      Post(
-        userName: 'Ava Patel',
-        headline: 'UI/UX Designer at Creatives',
-        date: 'May 10, 2023',
-        avatar: '',
-        content: 'Excited to share my latest design project! Feedback welcome.',
-        image:
-            'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
-        likes: 45,
-        comments: 8,
-        liked: false,
-      ),
-    ];
+  Future<List<Post>> _fetchPosts() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await Provider.of<HomescreenPostProvider>(
+        context,
+        listen: false,
+      ).fetchPosts();
+      List<dynamic> postsData = Provider.of<HomescreenPostProvider>(
+        context,
+        listen: false,
+      ).posts;
+
+      if (postsData.isEmpty) {
+        return [];
+      }
+      return postsData.map((post) {
+        final user = post['user'] ?? {};
+        return Post(
+          id: post['id'] ?? '',
+          userName: user['username'] ?? 'Unknown User',
+          headline: user['email'] ?? '',
+          date: post['createAt']?.toString().substring(0, 10) ?? '',
+          avatar: user['avatar'] ?? '',
+          content: post['content'] ?? '',
+          image: post['url'] ?? '',
+          likes: post['likes'] ?? 0,
+          comments: post['comments'] ?? 0,
+          liked: post['liked'] ?? false,
+          userObject: user,
+        );
+      }).toList();
+    } catch (error) {
+      print("Error fetching posts: $error");
+      _errorMessage = "Failed to load posts.";
+      return [];
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _searchPosts(String keyword) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await Provider.of<HomescreenPostProvider>(
+        context,
+        listen: false,
+      ).searchPosts(keyword);
+      // After searching, rebuild the _buildHomeScreen with the filtered results
+      setState(() {
+        _postsFuture = Future.value(
+          Provider.of<HomescreenPostProvider>(
+            context,
+            listen: false,
+          ).searchResults.map((post) {
+            final user = post['user'] ?? {};
+            return Post(
+              id: post['id'] ?? '',
+              userName: user['username'] ?? 'Unknown User',
+              headline: user['email'] ?? '',
+              date: post['createAt']?.toString().substring(0, 10) ?? '',
+              avatar: user['avatar'] ?? '',
+              content: post['content'] ?? '',
+              image: post['url'] ?? '',
+              likes: post['likes'] ?? 0,
+              comments: post['comments'] ?? 0,
+              liked: post['liked'] ?? false,
+              userObject: user,
+            );
+          }).toList(),
+        );
+      });
+    } catch (error) {
+      print("Error searching posts: $error");
+      _errorMessage = "Failed to search posts.";
+      setState(() {
+        _postsFuture = Future.error(_errorMessage!);
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _refreshPosts() async {
     setState(() {
-      _postsFuture = fetchPosts(); // refetch
+      _postsFuture = _fetchPosts();
     });
   }
 
@@ -72,11 +141,17 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundImage: post.avatar != ''
+                  backgroundImage: post.avatar.isNotEmpty
                       ? NetworkImage(post.avatar)
                       : null,
                   radius: 24,
-                  child: post.avatar == '' ? Text(post.userName[0]) : null,
+                  child: post.avatar.isEmpty
+                      ? Text(
+                          post.userName.isNotEmpty
+                              ? post.userName[0].toUpperCase()
+                              : '?',
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -105,11 +180,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             Text(post.content),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(post.image, fit: BoxFit.cover),
-            ),
+            if (post.image.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  post.image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Text('Image failed to load');
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             const Divider(),
             Row(
@@ -137,14 +220,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () {
-                    // open comment dialog
+                GestureDetector(
+                  onTap: () async {
+                    final updatedCommentCount = await openCommentsBottomSheet(
+                      context,
+                      posts[index] as Map<String, dynamic>,
+                    );
+                    if (updatedCommentCount != null) {
+                      setState(() {
+                        posts[index].comments = updatedCommentCount;
+                      });
+                    }
                   },
-                  icon: const Icon(Icons.comment_outlined, color: Colors.grey),
-                  label: Text(
-                    '${post.comments} Comments',
-                    style: const TextStyle(color: Colors.grey),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.comment_outlined, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${post.comments} Comments',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -155,37 +251,46 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget getCurrentScreen() {
-    switch (_currentIndex) {
-      case 0:
-        return FutureBuilder<List<Post>>(
-          future: _postsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return const Center(child: Text('Failed to load posts.'));
-            }
-            final posts = snapshot.data!;
+  Widget _buildHomeScreen() {
+    return FutureBuilder<List<Post>>(
+      future: _postsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Failed to load posts: ${snapshot.error}'));
+        } else {
+          final posts = snapshot.data ?? [];
+          if (posts.isEmpty && !_isLoading) {
             return LiquidPullToRefresh(
               onRefresh: _refreshPosts,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: posts.length,
-                itemBuilder: (context, index) =>
-                    buildPostCard(posts[index], index, posts),
-              ),
+              child: const Center(child: Text('No posts available.')),
             );
-          },
-        );
-      case 1:
-        return const CreatePostScreen();
+          }
+          return LiquidPullToRefresh(
+            onRefresh: _refreshPosts,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: posts.length,
+              itemBuilder: (context, index) =>
+                  buildPostCard(posts[index], index, posts),
+            ),
+          );
+        }
+      },
+    );
+  }
 
+  Widget _getCurrentScreen() {
+    switch (_currentIndex) {
+      case 0:
+        return _buildHomeScreen();
+      case 1:
+        return CreatePostCard(onPostCreated: _refreshPosts);
       case 2:
         return const JobsScreen();
       case 3:
-        return const ProfileScreen();
+        return ProfileScreen();
       default:
         return const SizedBox();
     }
@@ -206,9 +311,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: TextField(
                     controller: _searchController,
+                    onSubmitted: (value) async {
+                      final keyword = value.trim();
+                      if (keyword.isNotEmpty) {
+                        _searchPosts(keyword);
+                      } else {
+                        _refreshPosts(); // Reset to full list
+                      }
+                    },
                     decoration: InputDecoration(
-                      hintText: 'Search jobs, people, posts...',
+                      hintText: 'Search posts...',
                       prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _refreshPosts();
+                        },
+                      ),
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 0,
                         horizontal: 16,
@@ -224,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           : null,
-      body: getCurrentScreen(),
+      body: _getCurrentScreen(),
       bottomNavigationBar: WaterDropNavBar(
         backgroundColor: Colors.white,
         waterDropColor: Theme.of(context).primaryColor,
@@ -242,4 +362,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+class CreatePostScreen {
+  const CreatePostScreen();
 }

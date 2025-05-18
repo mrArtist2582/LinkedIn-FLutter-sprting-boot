@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 import 'package:linked_in/screens/auth/login_screen.dart';
-import '../home_screen.dart';
+import '../../providers/auth_provider.dart'; 
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -28,23 +30,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _register() {
+  void _register() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        style: ToastificationStyle.flat,
+        title: const Text("Error"),
+        description: const Text("Passwords do not match."),
+        autoCloseDuration: const Duration(seconds: 3),
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
-    // Simulate registration delay
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+    try {
+      await Provider.of<AuthProvider>(context, listen: false).register(
+        _nameController.text.trim(),
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
-    });
+
+      if (!mounted) return;
+
+      // Show success toast
+      toastification.show(
+        context: context,
+        type: ToastificationType.success,
+        style: ToastificationStyle.flat,
+        title: const Text("Success"),
+        description: const Text("Registration successful. Please login."),
+        autoCloseDuration: const Duration(seconds: 3),
+      );
+
+      // Navigate to Login after short delay
+      Future.delayed(const Duration(seconds: 2), () {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      });
+    } catch (e) {
+      // Show error toast
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        style: ToastificationStyle.flat,
+        title: const Text("Registration Failed"),
+        description: Text("$e"),
+        autoCloseDuration: const Duration(seconds: 5),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -207,27 +253,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                   ),
-
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
+                            builder: (context) => const LoginScreen()),
                       );
                     },
-                    child: Text(
+                    child: const Text(
                       "Already have an account? Sign In",
                       style: TextStyle(
-                        color: const Color(0xFF0077B5),
+                        color: Color(0xFF0077B5),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 70),
+                  const SizedBox(height: 30), // Reduced bottom SizedBox
                   Padding(
-                    padding: EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: Column(
                       children: const [
                         Divider(color: Colors.grey),

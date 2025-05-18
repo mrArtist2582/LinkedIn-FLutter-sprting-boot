@@ -6,8 +6,10 @@ class Post {
   final String content;
   final String image;
   int likes;
-  final int comments;
+  int comments;
   bool liked;
+  final dynamic id; // Assuming your posts have an ID
+  final dynamic userObject; // To hold the original user data if needed
 
   Post({
     required this.userName,
@@ -16,22 +18,10 @@ class Post {
     required this.avatar,
     required this.content,
     required this.image,
-    required this.likes,
-    required this.comments,
-    required this.liked,
+    this.likes = 0,
+    this.comments = 0,
+    this.liked = false,
+    this.id,
+    this.userObject,
   });
-
-  factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
-      userName: json['userName'],
-      headline: json['headline'],
-      date: json['date'],
-      avatar: json['avatar'],
-      content: json['content'],
-      image: json['image'],
-      likes: json['likes'],
-      comments: json['comments'],
-      liked: json['liked'],
-    );
-  }
 }

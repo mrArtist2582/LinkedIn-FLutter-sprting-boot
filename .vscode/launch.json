@@ -31,6 +31,16 @@
             "projectName": "demo",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-Linkedin12Application<linkedin>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.linkedin.Linkedin12Application",
+            "projectName": "linkedin",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

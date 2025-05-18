@@ -25,7 +25,11 @@ public class ProfileService {
     }
 
     public ProfileModel updatedata(UserModel userModel, ProfileModel profileModel) {
-    ProfileModel existuser=repo.findByUser(userModel).orElseThrow(()->new RuntimeException("profile not found"));
+    ProfileModel existuser=repo.findByUser(userModel).orElse(null);
+    if(existuser==null ){
+        ProfileModel porf=repo.save(profileModel);
+        return porf;
+    }
         System.out.println("updating here");
         existuser.setHeadline(profileModel.getHeadline());
         existuser.setSkills(profileModel.getSkills());
@@ -33,7 +37,11 @@ public class ProfileService {
         existuser.setCountry(profileModel.getCountry());
         existuser.setCity(profileModel.getCity());
         existuser.setAbout(profileModel.getAbout());
-
+        existuser.setLink(profileModel.getLink());
+        existuser.setLinktext(profileModel.getLinktext());
+        existuser.setExperience(profileModel.getExperience());
+        existuser.setIndustry(profileModel.getIndustry());
+        existuser.setPronoums(profileModel.getPronoums());
         return repo.save(existuser);
     }
 
