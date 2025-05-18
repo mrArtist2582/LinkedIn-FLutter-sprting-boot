@@ -6,7 +6,7 @@ A complete full-stack job portal application where users can register, view job 
 [Click here to watch the project video](https://drive.google.com/file/d/1w4jyNka3il6aOzovxAjrmrINjRzxJJ6M/view?usp=sharing)
 
 ## 🖼️ Project Screenshots
-(LinkedIn.png)
+![LinkedIn](https://github.com/user-attachments/assets/dd6b2000-5c26-4a84-b686-adf1fa8bade5)
 
 
 ## 🛠️ Technologies Used
