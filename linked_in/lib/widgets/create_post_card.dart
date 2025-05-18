@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 class CreatePostCard extends StatefulWidget {
   final VoidCallback onPostCreated;
 
-  const CreatePostCard({Key? key, required this.onPostCreated}) : super(key: key);
+  const CreatePostCard({super.key, required this.onPostCreated});
 
   @override
   State<CreatePostCard> createState() => _CreatePostCardState();

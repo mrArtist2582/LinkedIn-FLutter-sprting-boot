@@ -1,15 +1,15 @@
-
 import 'package:flutter/material.dart';
 import 'package:linked_in/providers/comment_provider.dart';
 import 'package:provider/provider.dart';
 
+//  Change the return type of the function to Future<int?>.
 Future<int?> openCommentsBottomSheet(
-  BuildContext context, Map<String, dynamic> item) async {
+    BuildContext context, Map<String, dynamic> item) async {
   final TextEditingController commentController = TextEditingController();
-  final int postId = item['id']; // Correctly access the post ID
+  final int postId = item['id'];
   final commentProvider = Provider.of<CommentProvider>(context, listen: false);
 
-  final updatedCommentsLength = await showModalBottomSheet<int>(
+  final updatedComments = await showModalBottomSheet<List<dynamic>>(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
@@ -24,7 +24,7 @@ Future<int?> openCommentsBottomSheet(
           top: 24,
         ),
         child: FutureBuilder<List<dynamic>>(
-          future: commentProvider.getComments(postId),
+          future: commentProvider.getComments(postId), // 🔁 FETCH from backend
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -103,7 +103,8 @@ Future<int?> openCommentsBottomSheet(
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context, comments.length);
+                        //  Pass the comments back to the caller.
+                        Navigator.pop(context, comments);
                       },
                       child: const Text("Done"),
                     ),
@@ -117,5 +118,11 @@ Future<int?> openCommentsBottomSheet(
     },
   );
 
-  return updatedCommentsLength;
+  //  Return the number of comments if updatedComments is not null.  Important
+  if (updatedComments != null) {
+    return updatedComments.length;
+  }
+  // Return null if updatedComments is null.  Important
+  return null;
 }
+

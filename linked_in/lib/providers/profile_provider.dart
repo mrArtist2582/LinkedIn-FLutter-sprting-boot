@@ -167,7 +167,7 @@ class ProfileProvider with ChangeNotifier {
 
     try {
       final response = await http.put(
-        Uri.parse('http://192.168.105.153:8080/jobpost/update/${postId}'),
+        Uri.parse('http://192.168.105.153:8080/jobpost/update/$postId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': '$token',
@@ -196,7 +196,7 @@ class ProfileProvider with ChangeNotifier {
     try {
       // Assume you have an HTTP service to delete post
       final response = await http.delete(
-          Uri.parse('http://192.168.105.153:8080/jobpost/delete/${postId}'),
+          Uri.parse('http://192.168.105.153:8080/jobpost/delete/$postId'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': '$token',

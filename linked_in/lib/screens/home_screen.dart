@@ -221,16 +221,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () async {
-                    final updatedCommentCount = await openCommentsBottomSheet(
-                      context,
-                      posts[index] as Map<String, dynamic>,
-                    );
-                    if (updatedCommentCount != null) {
-                      setState(() {
-                        posts[index].comments = updatedCommentCount;
-                      });
-                    }
+                  onTap: ()async {
+                                      await openCommentsBottomSheet(
+                                          context, post as Map<String, dynamic>);
+                                      setState(
+                                          () {});
                   },
                   child: Row(
                     children: [

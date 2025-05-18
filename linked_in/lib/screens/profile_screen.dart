@@ -28,7 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background, // Use theme's background
+      backgroundColor: theme.colorScheme.surface, // Use theme's background
       body: profileProvider.username == null
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -413,33 +413,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDeleteDialog(BuildContext context) {
-    final profileProvider =
-        Provider.of<ProfileProvider>(context, listen: false);
+    Widget _buildDeleteDialog(BuildContext context) {
+  final profileProvider =
+      Provider.of<ProfileProvider>(context, listen: false);
 
-    return AlertDialog(
-      title: const Text("Logout"),
-      content: const Text(
-          "If you want to logout then press Yes, or press Cancel to stay."),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(); // Close dialog
-          },
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            await profileProvider.deleteprofile(); // Handle logout logic
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-            );
-          },
-          child: const Text("Yes"),
-        ),
-      ],
-    );
-  }
+  return AlertDialog(
+    title: const Text("Logout"),
+    content: const Text(
+        "If you want to logout then press Yes, or press Cancel to stay."),
+    actions: [
+      TextButton(
+        onPressed: () {
+          Navigator.of(context).pop(); // Close dialog
+        },
+        child: const Text("Cancel"),
+      ),
+      ElevatedButton(
+        onPressed: () async {
+          await profileProvider.deleteprofile(); // Handle logout logic
+
+          // Use pushAndRemoveUntil to clear the stack and go to LoginScreen
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false, // This predicate makes it clear the entire stack
+          );
+        },
+        child: const Text("Yes"),
+      ),
+    ],
+  );
+}
+
 }
 

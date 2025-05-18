@@ -4,6 +4,8 @@ import 'package:linked_in/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class PostsFeed extends StatefulWidget {
+  const PostsFeed({super.key});
+
   @override
   _PostsFeedState createState() => _PostsFeedState();
 }
@@ -92,6 +94,8 @@ class _PostsFeedState extends State<PostsFeed> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CircleAvatar(
+                                radius: 22,
+                                backgroundColor: Colors.blue,
                                 child: Text(
                                   avatar,
                                   style: TextStyle(
@@ -99,8 +103,6 @@ class _PostsFeedState extends State<PostsFeed> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                radius: 22,
-                                backgroundColor: Colors.blue,
                               ),
                               SizedBox(width: 8),
                               Expanded(

@@ -253,7 +253,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 )
-                .toList(),
+                ,
             const SizedBox(height: 16),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -283,7 +283,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 )
-                .toList(),
+                ,
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {

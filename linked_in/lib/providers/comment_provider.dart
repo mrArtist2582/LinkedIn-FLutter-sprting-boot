@@ -8,7 +8,7 @@ class CommentProvider with ChangeNotifier {
     required int postId,
     required String commentText,
   }) async {
-    final url = Uri.parse('http://192.168.105.153:8080/post/${postId}/comments');
+    final url = Uri.parse('http://192.168.105.153:8080/post/$postId/comments');
     print(postId);
     print(commentText);
 
@@ -33,7 +33,7 @@ class CommentProvider with ChangeNotifier {
   }
 
   Future<List<dynamic>> getComments(int postId) async {
-    final url = Uri.parse('http://192.168.105.153:8080/post/${postId}/comments');
+    final url = Uri.parse('http://192.168.105.153:8080/post/$postId/comments');
     final pref = await SharedPreferences.getInstance();
     final token = pref.getString('token');
     try {

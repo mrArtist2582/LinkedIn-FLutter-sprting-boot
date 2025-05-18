@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class JobProvider with ChangeNotifier {
   List<Map<String, dynamic>> _jobs = [];
-  List<Map<String, dynamic>> _appliedJobs = [];
+  final List<Map<String, dynamic>> _appliedJobs = [];
 
   List<Map<String, dynamic>> get jobs => [..._jobs];
   List<Map<String, dynamic>> get appliedJobs => [..._appliedJobs];

@@ -24,4 +24,6 @@ class Post {
     this.id,
     this.userObject,
   });
+
+
 }
