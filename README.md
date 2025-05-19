@@ -82,7 +82,7 @@ Backend (/backend)src/main/java/├── controller/         # REST API control
 2.  Navigate to the frontend:
 
     ```bash
-    cd frontend
+    cd linked_in
     ```
 
 3.  Get dependencies:
