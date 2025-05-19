@@ -45,7 +45,9 @@ A complete full-stack job portal application where users can register, view job 
 
 ## 📁 Project Structure
 
-Frontend (/frontend)lib/├── main.dart             # Entry point├── models/             # Dart models (Job, User)├── Providers/          # For State Management├── screens/            # UI Screens (Home, Login, JobDetail, profileScreen)└── widgets/            # Reusable UI componentsBackend (/backend)src/main/java/├── controller/         # REST API controllers├── service/            # Business logic├── repository/         # Data access layer (JPA)├── model/              # Java entities (User, Job)├── security/           # JWT filter, provider, config└── BackendApplication.java # Main class
+Frontend (/frontend)lib/├── main.dart             # Entry point├── models/             # Dart models (Job, User)├── Providers/          # For State Management├── screens/            # UI Screens (Home, Login, JobDetail, profileScreen)└── widgets/            # Reusable UI components
+
+Backend (/backend)src/main/java/├── controller/         # REST API controllers├── service/            # Business logic├── repository/         # Data access layer (JPA)├── model/              # Java entities (User, Job)├── security/           # JWT filter, provider, config└── BackendApplication.java # Main class
 ## 🔐 Authentication Flow (Spring Security + JWT)
 
 1.  User/Admin logs in → receives JWT token.
