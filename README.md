@@ -59,7 +59,7 @@ Backend (/backend)src/main/java/├── controller/         # REST API control
 
 ### 🔧 Backend
 
-1.  Create a MySQL database (e.g., `job_finder`).
+1.  Create a MySQL database (e.g., `linkedin`).
 2.  Update `application.properties`:
 
     ```properties
